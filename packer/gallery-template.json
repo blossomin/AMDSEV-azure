@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "galleries_name": {
+      "type": "String"
+    },
+    "publisher_name": {
+      "type": "String",
+      "defaultValue": "publisher"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2022-03-03",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('galleries_name')]",
+      "properties": {
+        "identifier": {}
+      },
+      "type": "Microsoft.Compute/galleries"
+    },
+    {
+      "apiVersion": "2022-03-03",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
+      ],
+      "location": "[resourceGroup().location]",
+      "name": "[concat(parameters('galleries_name'), '/ubu2204-snp-host-upm')]",
+      "properties": {
+        "architecture": "x64",
+        "hyperVGeneration": "V2",
+        "osState": "Generalized",
+        "osType": "Linux",
+        "identifier": {
+            "publisher": "[parameters('publisher_name')]",
+            "offer": "ubuntu",
+            "sku": "2204-snp-host-upm"
+        }
+      },
+      "type": "Microsoft.Compute/galleries/images"
+    }
+  ],
+  "variables": {}
+}

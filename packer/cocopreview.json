@@ -1,0 +1,5 @@
+{
+  "subscription": "{{env `AZURE_SUBSCRIPTION_ID`}}",
+  "resource_group": "{{env `AZURE_RESOURCE_GROUP`}}",
+  "gallery_name": "{{env `GALLERY_NAME`}}"
+}

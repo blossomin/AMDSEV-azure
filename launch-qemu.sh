@@ -188,24 +188,24 @@ QEMU_EXE="$(readlink -e $TMP)"
 	[ -z "$GUEST_NAME" ] && GUEST_NAME="$(basename $TMP | sed -re 's|\.[^\.]+$||')"
 }
 
-TMP="$UEFI_PATH/OVMF_CODE.fd"
+TMP="$UEFI_PATH/OVMF.fd"
 UEFI_CODE="$(readlink -e $TMP)"
 [ -z "$UEFI_CODE" ] && {
 	echo "Can't locate UEFI code file [$TMP]"
 	usage
 }
 
-[ -e "./$GUEST_NAME.fd" ] || {
-	TMP="$UEFI_PATH/OVMF_VARS.fd"
-	UEFI_VARS="$(readlink -e $TMP)"
-	[ -z "$UEFI_VARS" ] && {
-		echo "Can't locate UEFI variable file [$TMP]"
-		usage
-	}
+# [ -e "./$GUEST_NAME.fd" ] || {
+# 	TMP="$UEFI_PATH/OVMF_VARS.fd"
+# 	UEFI_VARS="$(readlink -e $TMP)"
+# 	[ -z "$UEFI_VARS" ] && {
+# 		echo "Can't locate UEFI variable file [$TMP]"
+# 		usage
+# 	}
 
-	run_cmd "cp $UEFI_VARS ./$GUEST_NAME.fd"
-}
-UEFI_VARS="$(readlink -e ./$GUEST_NAME.fd)"
+# 	run_cmd "cp $UEFI_VARS ./$GUEST_NAME.fd"
+# }
+# UEFI_VARS="$(readlink -e ./$GUEST_NAME.fd)"
 
 if [ "$ALLOW_DEBUG" = "1" ]; then
 	# This will dump all the VMCB on VM exit
@@ -241,8 +241,8 @@ add_opts "-no-reboot"
 # The OVMF binary, including the non-volatile variable store, appears as a
 # "normal" qemu drive on the host side, and it is exposed to the guest as a
 # persistent flash device.
-add_opts "-drive if=pflash,format=raw,unit=0,file=${UEFI_CODE},readonly"
-add_opts "-drive if=pflash,format=raw,unit=1,file=${UEFI_VARS}"
+add_opts "-drive if=pflash,format=raw,unit=0,file=${UEFI_CODE},readonly=on"
+# add_opts "-drive if=pflash,format=raw,unit=1,file=${UEFI_VARS}"
 
 # add CDROM if specified
 [ -n "${CDROM_FILE}" ] && add_opts "-drive file=${CDROM_FILE},media=cdrom -boot d"
@@ -292,9 +292,9 @@ if [ ${SEV} = "1" ]; then
 		add_opts "-object memory-backend-memfd,id=ram1,size=${MEM}M,share=true,prealloc=false"
 		add_opts "-machine memory-backend=ram1"
 		if [ "${CERTS_PATH}" != "" ]; then
-			add_opts "-object sev-snp-guest,id=sev0,cbitpos=${CBITPOS},reduced-phys-bits=1,certs-path=${CERTS_PATH}"
+			add_opts "-object sev-snp-guest,id=sev0,cbitpos=${CBITPOS},reduced-phys-bits=1,kernel-hashes=on,certs-path=${CERTS_PATH}"
 		else
-			add_opts "-object sev-snp-guest,id=sev0,cbitpos=${CBITPOS},reduced-phys-bits=1"
+			add_opts "-object sev-snp-guest,id=sev0,cbitpos=${CBITPOS},reduced-phys-bits=1,kernel-hashes=on"
 		fi
 	else
 		add_opts "-object sev-guest,id=sev0${SEV_POLICY},cbitpos=${CBITPOS},reduced-phys-bits=1"

@@ -19,7 +19,7 @@ build_kernel()
 	pushd linux >/dev/null
 
 	if [ ! -d guest ]; then
-		run_cmd git clone ${KERNEL_GIT_URL} guest
+		run_cmd git clone -b ${KERNEL_GUEST_BRANCH} --depth=1 ${KERNEL_GIT_URL} guest
 		pushd guest >/dev/null
 		run_cmd git remote add current ${KERNEL_GIT_URL}
 		popd
@@ -27,7 +27,10 @@ build_kernel()
 
 	if [ ! -d host ]; then
 		# use a copy of guest repo as the host repo
-		run_cmd cp -r guest host
+		run_cmd git clone -b ${KERNEL_HOST_BRANCH} --depth=1 ${KERNEL_GIT_HOST_URL} host
+        pushd host >/dev/null
+        run_cmd git remote add current ${KERNEL_GIT_HOST_URL}
+        popd
 	fi
 
 	for V in guest host; do
@@ -39,8 +42,10 @@ build_kernel()
 		fi
 
 		if [ "${V}" = "guest" ]; then
+            GIT_URL = "${KERNEL_GIT_URL}"
 			BRANCH="${KERNEL_GUEST_BRANCH}"
 		else
+            GIT_URL = "${KERNEL_GIT_HOST_URL}"
 			BRANCH="${KERNEL_HOST_BRANCH}"
 		fi
 
@@ -48,13 +53,15 @@ build_kernel()
 		# of date, so always update the remote URL first. Also handle case
 		# where AMDSEV scripts are updated while old kernel repos are still in
 		# the directory without a 'current' remote
-		pushd ${V} >/dev/null
-		if git remote get-url current 2>/dev/null; then
-			run_cmd git remote set-url current ${KERNEL_GIT_URL}
-		else
-			run_cmd git remote add current ${KERNEL_GIT_URL}
-		fi
-		popd >/dev/null
+        
+		# pushd ${V} >/dev/null
+		# if git remote get-url current 2>/dev/null; then
+        #     echo ${GIT_URL}
+		# 	run_cmd git remote set-url current ${GIT_URL}
+		# else
+		# 	run_cmd git remote add current ${GIT_URL}
+		# fi
+		# popd >/dev/null
 
 		# Nuke any previously built packages so they don't end up in new tarballs
 		# when ./build.sh --package is specified
@@ -62,16 +69,16 @@ build_kernel()
 
 		VER="-snp-${V}"
 
-		MAKE="make -C ${V} -j $(getconf _NPROCESSORS_ONLN) LOCALVERSION="
+		MAKE="make -C ${V} -j 32 LOCALVERSION="
 
 		run_cmd $MAKE distclean
 
 		pushd ${V} >/dev/null
-			run_cmd git fetch current
+			run_cmd git fetch current ${BRANCH}
 			run_cmd git checkout current/${BRANCH}
 			COMMIT=$(git log --format="%h" -1 HEAD)
 
-			run_cmd "cp /boot/config-$(uname -r) .config"
+			run_cmd "cp /home/dchen/AMDSEV/.config-jere .config"
 			run_cmd ./scripts/config --set-str LOCALVERSION "$VER-$COMMIT"
 			run_cmd ./scripts/config --disable LOCALVERSION_AUTO
 			run_cmd ./scripts/config --enable  EXPERT
@@ -122,12 +129,24 @@ build_kernel()
 			run_cmd ./scripts/config --enable MLXSW_SPECTRUM_DCB
 			run_cmd ./scripts/config --module MLXSW_MINIMAL
 			run_cmd ./scripts/config --module MLXFW
+            run_cmd ./scripts/config --enable HYPERV_PSP
+            run_cmd ./scripts/config --enable VIRTIO_SCSI
+            run_cmd ./scripts/config --enable VFAT
+            run_cmd ./scripts/config --enable NLS_ISO8859_1
+            run_cmd ./scripts/config --enable EXT4_FS
+            run_cmd ./scripts/config --enable IA32_EMULATION
+            run_cmd ./scripts/config --enable VIRTIO_PCI
+            run_cmd ./scripts/config --enable VIRTIO_BALLOON
+            run_cmd ./scripts/config --enable VIRTIO_BLK
+            run_cmd ./scripts/config --enable VIRTIO_NET
+            run_cmd ./scripts/config --enable VIRTIO
+            run_cmd ./scripts/config --enable VIRTIO_RING
 
 			run_cmd echo $COMMIT >../../source-commit.kernel.$V
 		popd >/dev/null
 
 		yes "" | $MAKE olddefconfig
-
+        
 		# Build 
 		run_cmd $MAKE >/dev/null
 
@@ -155,7 +174,7 @@ build_install_ovmf()
 		GCCVERS="GCC5"
 	fi
 
-	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n $(getconf _NPROCESSORS_ONLN) ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/OvmfPkgX64.dsc"
+	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n 32  ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/AmdSev/AmdSevX64.dsc"
 
 	# initialize git repo, or update existing remote to currently configured one
 	if [ -d ovmf ]; then
@@ -182,9 +201,10 @@ build_install_ovmf()
 		run_cmd $BUILD_CMD
 
 		mkdir -p $DEST
-		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_CODE.fd $DEST
-		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_VARS.fd $DEST
-
+		#un_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_CODE.fd $DEST
+		#un_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_VARS.fd $DEST
+        run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF.fd $DEST
+        
 		COMMIT=$(git log --format="%h" -1 HEAD)
 		run_cmd echo $COMMIT >../source-commit.ovmf
 	popd >/dev/null
@@ -210,7 +230,7 @@ build_install_qemu()
 		popd >/dev/null
 	fi
 
-	MAKE="make -j $(getconf _NPROCESSORS_ONLN) LOCALVERSION="
+	MAKE="make -j 32 LOCALVERSION="
 
 	pushd qemu >/dev/null
 		run_cmd git fetch current

@@ -1,0 +1,41 @@
+{
+  "variables": {
+      "subscription": "",
+      "resource_group": "",
+      "gallery_name": ""
+  },
+  "builders": [{
+    "type": "azure-arm",
+
+    "use_azure_cli_auth": true,
+
+    "shared_image_gallery_destination": {
+      "subscription": "{{user `subscription`}}",
+      "resource_group": "{{user `resource_group`}}",
+      "gallery_name": "{{user `gallery_name`}}",
+      "image_name": "ubu2204-snp-host-upm",
+      "image_version": "0.20240207.2",
+      "replication_regions": ["eastus", "westeurope"],
+      "storage_account_type": "Standard_LRS"
+    },
+
+    "azure_tags": {
+      "AMDSEV-version": "v2024.02.07",
+      "kernel-version": "6.7.0-rc6-next-20231222-snp-host-0fcebf5ce3fe"
+    },
+
+    "os_type": "Linux",
+    "image_publisher": "canonical",
+    "image_offer": "0001-com-ubuntu-server-jammy",
+    "image_sku": "22_04-lts-gen2",
+    "shared_gallery_image_version_exclude_from_latest": true,
+
+    "location": "East US",
+    "vm_size": "Standard_DS2_v2"
+  }],
+  "provisioners": [{
+    "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E bash '{{ .Path }}'",
+    "script": "script.sh",
+    "type": "shell"
+  }]
+}

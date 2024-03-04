@@ -1,3 +1,8 @@
 distros/ubuntu-18.04/src
 distros/fedora-28/src
 source-commit.*
+snp-release-*
+usr/*
+linux/linux*
+ovmf/*
+qemu/*
