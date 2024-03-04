@@ -20,7 +20,8 @@ az vm create -g cvm -n test2 \
 1. sudo ./install.sh
 2. sudo reboot
 3. extract the guest kernel from deb file
-3. download an image file: wget https://saimei.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2
-4. use the compiled kernel, ovmf, qemu and the image file to launch a guest: 
+4. download an image file: wget https://saimei.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2
+5. use the compiled kernel, ovmf, qemu and the image file to launch a guest: 
+    # please use the launch-qemu.sh script in my repo
     sudo ./launch-qemu.sh -sev-snp -kernel /path/to/guest/kernel  -hda debian-12-nocloud-amd64.qcow2
 ```
