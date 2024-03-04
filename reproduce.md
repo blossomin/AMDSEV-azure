@@ -17,9 +17,11 @@ az vm create -g cvm -n test2 \
 ### 3. replace the host kernel
 ```
 0. copy the snp-host-release package to the host VM
-1. sudo ./install.sh
-2. sudo reboot
-3. extract the guest kernel from deb file
+1. tar xvf snp-release-2024-03-04.tar.gz && cd snp-release-2024-03-04
+2. sudo ./install.sh && sudo reboot
+3. extract the guest kernel from deb file: 
+    mkdir /path/to/guestdir
+    dpkg-deb -R /home/azureuser/snp-release-2024-03-04/linux/guest/linux-image-6.7.0-snp-guest-98543c2aa_6.7.0-g98543c2aa649-2_amd64.deb /path/to/guestdir/
 4. download an image file: wget https://saimei.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2
 5. use the compiled kernel, ovmf, qemu and the image file to launch a guest: 
     # please use the launch-qemu.sh script in my repo
